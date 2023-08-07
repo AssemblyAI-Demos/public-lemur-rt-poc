@@ -3,3 +3,5 @@
 /.env.example
 /.env.local
 /.next
+/__pycache__
+/myenv

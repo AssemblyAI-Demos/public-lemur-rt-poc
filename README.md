@@ -4,6 +4,15 @@
 
 [Loom Video Link](https://www.loom.com/embed/8d57564f628d482e91191c2cfaf72437?sid=57d13da5-bc7d-4d6e-8456-ab3bada53278")
 
+### TL;DR
+
+This implementation demonstrates how AssemblyAI's asynchronous transcription API can be used along with LeMUR to provide a near real time 'agent assistant' experience.
+
+##### The core logic is inside of `main.py` and `app.py`
+
+- `main.py` holds the logic for chunking a live stream & sending files off for transcription
+- `app.py` is a webhook server which handles the LeMUR completions & LLM logic.
+
 #### There are several steps you need to run this app.
 
 1. Start docker container (be sure pull the pluot/nginx-rtmp container from docker hub first if you don't have it)
