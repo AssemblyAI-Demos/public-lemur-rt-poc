@@ -52,32 +52,6 @@ def lemur_call(previous_responses, transcript_ids):
     )
     return response.json()
 
-lemur_notes_format = "Bullet points"
-def lemur_notes(previous_notes, transcript_ids):
-    formatted_previous_notes = "\n\n".join(previous_notes)
-    lemur_prompt = f"""
-    You are a helpful assistant that is aiding me in taking notes on this live stream. Imagine that I am hosting a live workshop about AssemblyAI's new products.
-
-    Imagine that you are taking notes on behalf of the speaker, and trying to help the speaker to understand what they've discussed so far in the presentation. Think of this as an outline of what has already been spoken. Don't be afraid to include other context that was not explicitly spoken in conversation so far!
-
-    I will review these notes as I present, and use them for encouragement and guidance.
-
-    Here are the notes you have taken so far:
-
-    {formatted_previous_notes}
-    
-    Your job is to add to these notes so that they are accurate, relevant, and up to date without being too verbose or hard to read.
-
-    New Notes:
-    """
-    headers = {'authorization': assembly_key}
-    response = requests.post(
-        'https://api.assemblyai.com/v2/generate/summary',
-        json={'context': lemur_prompt, 'answer_format': lemur_notes_format, 'transcript_ids': transcript_ids},
-        headers=headers
-    )
-    return response.json()
-
 ids = []
 @app.route('/', methods=['POST'])
 def webhook_handler():
