@@ -6,7 +6,6 @@ import redis
 from glob import glob
 import ngrok
 from flask import Flask, request
-# from flask_socketio import SocketIO, emit
 from threading import Thread
 from pydub import AudioSegment
 
@@ -17,8 +16,6 @@ assembly_key = "YOUR KEY HERE"
 
 # create Flask app
 app = Flask(__name__)
-
-# socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 def has_audio(filename):
     audio = AudioSegment.from_file(filename)
