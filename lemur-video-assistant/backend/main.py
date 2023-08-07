@@ -63,7 +63,7 @@ def process_video(data):
         # Define the output filename based on the counter
         filename = f'stream_{start_time}_{counter:04d}.mp3'
 
-        # Start consuming the RTMP livestream and segmenting it into 1-minute chunks
+        # Start consuming the RTMP livestream and segmenting it into 20s chunks
         command = ['ffmpeg', '-i', rtmp_url, '-f', 'mp3', '-t', '20', filename]
 
         # Run the ffmpeg command and wait for it to complete
