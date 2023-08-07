@@ -54,7 +54,7 @@ def process_video(data):
     session_id = data.get('session_id', '')
     print('rtmp_url: ' + rtmp_url)
     print("waiting for stream to sync")
-    # Start consuming the RTMP livestream and segmenting it into 1-minute chunks
+    # Start consuming the RTMP livestream and segmenting it into chunks
     time.sleep(3)
     start_time = int(time.time())  # Get the current time in seconds since the Epoch
     r.hset('sessions', session_id, start_time) #store the session in redis. this will associate the front end session with the stream id (start time)
