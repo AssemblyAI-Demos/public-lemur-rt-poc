@@ -6,7 +6,7 @@
 
 ### TL;DR
 
-This implementation demonstrates how AssemblyAI's asynchronous transcription API can be used along with LeMUR to provide a near real time 'agent assistant' experience.
+This implementation demonstrates how AssemblyAI's asynchronous transcription API can be used along with LeMUR to provide a near real time 'LLM assistant' experience.
 
 ##### The core logic is inside of `main.py` and `app.py`
 
