@@ -1,6 +1,5 @@
 import ngrok
 import redis
-# from flask_socketio import SocketIO, emit
 from flask import Flask, request, stream_with_context, Response
 import logging
 import requests
