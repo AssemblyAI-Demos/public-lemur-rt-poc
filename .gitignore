@@ -1,2 +1,5 @@
-.DS_Store
-.env
+/.DS_Store
+/.env
+/.env.example
+/.env.local
+/.next/cache
