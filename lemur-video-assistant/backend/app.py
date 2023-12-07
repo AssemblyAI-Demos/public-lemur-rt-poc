@@ -9,10 +9,10 @@ import json
 
 r = redis.Redis(host='localhost', port=6379, db=0)
 
-ngrok_tunnel = "https://4bdf604b79e1.ngrok.app"  #note to update this every time you restart server
+ngrok_tunnel = "https://97e9c516397c.ngrok.app"  #note to update this every time you restart server
 r.set('ngrok_url', ngrok_tunnel)
 
-assembly_key = "YOUR KEY HERE"
+assembly_key = "09578ab459aa4f998c90f1adb44ea9ea"
 
 def get_transcript(id):
     headers = {'authorization': assembly_key}
@@ -111,7 +111,7 @@ def stream():
             time.sleep(3)
     headers = {
         'Content-Type': 'text/event-stream',
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': 'http://localhost:3001',
         'Access-Control-Allow-Credentials': 'true'
     }
     

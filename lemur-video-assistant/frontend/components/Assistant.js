@@ -8,7 +8,7 @@ const Assistant = () => {
     useEffect(() => {
         console.log(streamId)
         //create new event source
-        const eventSource = new EventSource(`https://4bdf604b79e1.ngrok.app/stream?streamid=${streamId}`, {
+        const eventSource = new EventSource(`https://97e9c516397c.ngrok.app/stream?streamid=${streamId}`, {
             withCredentials: true,
         });
 

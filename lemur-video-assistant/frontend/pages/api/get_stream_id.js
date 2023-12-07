@@ -2,12 +2,13 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
         const { session_id } = req.query;
         console.log("RUNNNING")
+        console.log(session_id)
         // add validation logic if required
 
         // Make your request here
         // You can use fetch, axios, or any other request library you prefer
         try {
-            const response = await fetch(`https://4483666ee24e.ngrok.app/stream_id?session_id=${session_id}`, {
+            const response = await fetch(`https://47fbe208fb3c.ngrok.app/stream_id?session_id=${session_id}`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
             });
