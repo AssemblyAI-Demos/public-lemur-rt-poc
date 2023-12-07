@@ -9,7 +9,7 @@ import json
 
 r = redis.Redis(host='localhost', port=6379, db=0)
 
-ngrok_tunnel = "https://97e9c516397c.ngrok.app"  #note to update this every time you restart server
+ngrok_tunnel = "https://2a15d1c33183.ngrok.app"  #note to update this every time you restart server
 r.set('ngrok_url', ngrok_tunnel)
 
 assembly_key = "09578ab459aa4f998c90f1adb44ea9ea"

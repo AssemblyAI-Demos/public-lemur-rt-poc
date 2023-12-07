@@ -124,18 +124,29 @@ r = redis.Redis(host='localhost', port=6379, db=0)
 # Flask app
 app = Flask(__name__)
 
+# Global dictionary to store final transcripts by session ID
+final_transcripts = []
+
 # Function to handle WebSocket messages (transcription responses)
 def on_message(ws, message):
     print("MESSAGE MF")
     transcript = json.loads(message)
     text = transcript.get('text', '')
+    session_id = transcript.get('session_id', '')
 
     # Handling different types of messages
     if transcript.get("message_type") == "PartialTranscript":
         print(f"Partial transcript: {text}")
     elif transcript.get("message_type") == 'FinalTranscript':
         print(f"Final transcript: {text}")
-        # Additional processing for final transcript can be done here
+        # if session_id:
+            # if session_id not in final_transcripts:
+            #     final_transcripts[session_id] = []
+        final_transcript = {
+                'session_id': session_id,
+                'text': text
+        }
+        final_transcripts.append(final_transcript)
 
 def on_error(ws, error):
     print(f"WebSocket Error: {error}")
@@ -143,20 +154,29 @@ def on_error(ws, error):
 def on_close(ws, close_status_code, close_reason):
     print(f"WebSocket closed with code {close_status_code}: {close_reason}")
 
+# Function to periodically write final transcripts to Redis
+def write_transcripts_to_redis(session_id):
+    print("WRITING TRANSCRIPTS TO REDIS FN")
+    while True:
+        print("WRITING TRANSCRIPTS TO REDIS LOOP")
+        print(final_transcripts)
+        time.sleep(1)  # Wait for 30 seconds
+        combined_transcript = ' '
+        for final_transcript in final_transcripts:
+            combined_transcript += final_transcript['text'] + ' '
+        print(combined_transcript)
+        r.set(f"transcripts_{session_id}", combined_transcript)
 
 # RTMP to PCM conversion and WebSocket streaming
 def process_rtmp_stream(rtmp_url, session_id):
-# def process_rtmp_stream(data):
-    print("DATA MF")
+    r.set("transcripts", " ")
+    print("RTMP URL")
     print(rtmp_url)
-    print("DATA MFs 2")
+    print("SESSION ID")
     print(session_id)
-    # rtmp_url = data.get('url', '')  # extract the URL from the data
-    # session_id = data.get('session_id', '')
-    print('rtmp_url: ' + rtmp_url)
     print("waiting for stream to sync")
     # Start consuming the RTMP livestream and segmenting it into chunks
-    time.sleep(3)
+    time.sleep(1)
     start_time = int(time.time())  # Get the current time in seconds since the Epoch
     r.hset('sessions', session_id, start_time) #store the session in redis. this will associate the front end session with the stream id (start time)
     # WebSocket setup
@@ -181,6 +201,9 @@ def process_rtmp_stream(rtmp_url, session_id):
     # Start the FFmpeg process
     ffmpeg_process = subprocess.Popen(command, stdout=subprocess.PIPE)
 
+    # Start the periodic function in a thread
+    threading.Thread(target=write_transcripts_to_redis, args=(session_id,)).start()
+
     while True:
         try:
             # Read audio data from FFmpeg
@@ -198,6 +221,7 @@ def process_rtmp_stream(rtmp_url, session_id):
 
     # Close the WebSocket connection
     ws.close()
+
 
 # Flask endpoint to start processing RTMP stream
 @app.route('/', methods=['POST'])
