@@ -8,7 +8,8 @@ function showEvent(e) {
 
 //note - this daily.co token and joinCall() are probably best to be moved into server side. 
 //this app is for demo purposes only 
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyIjoibGVtdXItYXNzaXN0YW50LXJvb20iLCJleHAiOjE3MDE5MTQ5NDQsIm8iOnRydWUsImQiOiI1NDI2NTliZS0xZGNlLTQzYjEtODMwZi1jZGVjMzRiYzFlODEiLCJpYXQiOjE3MDE5MTEzNDV9.Xz3ovFiXFxNz4-B07DMH2ACD6bKshD1C-2AuxSmViYE" //you can get one at: https://www.daily.co/
+//this key expires on Jan 6, 2024
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyIjoibGVtdXItYXNzaXN0YW50LXJvb20iLCJleHAiOjE3MDQ1MDk2MjEsIm8iOnRydWUsImQiOiI1NDI2NTliZS0xZGNlLTQzYjEtODMwZi1jZGVjMzRiYzFlODEiLCJpYXQiOjE3MDE5MTc2MjF9.Zd8pzlu_eNEPmXwdfelUM8e01UZRkf9UsC-6KueEzC8" //you can get one at: https://www.daily.co/
 
 const Video = () => {
   const callFrame = useRef(null);
@@ -41,7 +42,7 @@ const Video = () => {
     const response = await fetch('/api/begin_processing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: 'rtmp://0.tcp.ngrok.io:18328/live/foo', session_id: session_id }), // /live/foo is the correct path - this is not placholder
+      body: JSON.stringify({ url: 'rtmp://4.tcp.ngrok.io:15592/live/foo', session_id: session_id }), // /live/foo is the correct path - this is not placholder
     });
 
     if (response.ok) {
@@ -77,7 +78,7 @@ const Video = () => {
   }
 
   function startLiveStream() {
-    callFrame.current.startLiveStreaming({ rtmpUrl: "rtmp://0.tcp.ngrok.io:18328/live/foo" }); //remember to change every time we updat this
+    callFrame.current.startLiveStreaming({ rtmpUrl: "rtmp://4.tcp.ngrok.io:15592/live/foo" }); //remember to change every time we updat this
     callFrame.current.on('live-streaming-started', showEvent)
 
     startProcessing()

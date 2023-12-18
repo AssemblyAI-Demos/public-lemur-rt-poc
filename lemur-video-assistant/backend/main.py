@@ -4,6 +4,7 @@ import subprocess
 import time
 import redis
 import websocket
+from urllib.parse import urlencode
 import base64
 import threading
 import json
@@ -50,7 +51,7 @@ def on_close(ws, close_status_code, close_reason):
     print(f"WebSocket closed with code {close_status_code}: {close_reason}")
 
 # Function to periodically write final transcripts to Redis
-def write_transcripts_to_redis(session_id):
+def write_transcripts_to_redis(stream_id):
     print("WRITING TRANSCRIPTS TO REDIS FN")
     while True:
         print("WRITING TRANSCRIPTS TO REDIS LOOP")
@@ -60,7 +61,7 @@ def write_transcripts_to_redis(session_id):
         for final_transcript in final_transcripts:
             combined_transcript += final_transcript['text'] + ' '
         print(combined_transcript)
-        r.set(f"transcripts_{session_id}", combined_transcript)
+        r.set(f"transcripts_{stream_id}", combined_transcript)
 
 # RTMP to PCM conversion and WebSocket streaming
 def process_rtmp_stream(rtmp_url, session_id):
@@ -75,7 +76,10 @@ def process_rtmp_stream(rtmp_url, session_id):
     start_time = int(time.time())  # Get the current time in seconds since the Epoch
     r.hset('sessions', session_id, start_time) #store the session in redis. this will associate the front end session with the stream id (start time)
     # WebSocket setup
-    ws_url = f"wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000"
+    word_boost = ["SDR", "SDRs", "BDRs", "AEs", "AE", "Salesforce", "Hubspot", "YoY", "QoQ", "MoM", "ARR", "SMB", "MRR"]
+    SAMPLE_RATE = 16000
+    params = {"sample_rate": SAMPLE_RATE, "word_boost": json.dumps(word_boost)}
+    ws_url = f"wss://api.assemblyai.com/v2/realtime/ws?{urlencode(params)}"
     ws = websocket.WebSocketApp(
         ws_url,
         header={"Authorization": assembly_key},
@@ -96,8 +100,17 @@ def process_rtmp_stream(rtmp_url, session_id):
     # Start the FFmpeg process
     ffmpeg_process = subprocess.Popen(command, stdout=subprocess.PIPE)
 
+    stream_id = r.hget('sessions', session_id).decode('utf-8')
+    print("STREAM ID: ", stream_id)
     # Start the periodic function in a thread
-    threading.Thread(target=write_transcripts_to_redis, args=(session_id,)).start()
+    threading.Thread(target=write_transcripts_to_redis, args=(stream_id,)).start()
+
+    #CALL SERVER TO START LEMUR PROCESSING HERE...
+    response = requests.post('https://ae968869e4ad.ngrok.app/start', json={'session_id': session_id})
+    if response.status_code == 200:
+        print("Process started successfully.")
+    else:
+        print("Error starting process:", response.json())
 
     while True:
         try:
@@ -127,7 +140,6 @@ def app_handler():
     session_id = data.get('session_id', '')
 
     # Start processing RTMP stream in a separate thread
-    # Thread(target=process_rtmp_stream, args=(rtmp_url, session_id)).start()
     Thread(target=process_rtmp_stream, args=(rtmp_url, session_id)).start()
     return {"status": "processing started"}
 

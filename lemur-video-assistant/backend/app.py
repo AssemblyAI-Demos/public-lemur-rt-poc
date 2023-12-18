@@ -6,14 +6,16 @@ import requests
 from flask_cors import CORS, cross_origin
 import time
 import json
+import assemblyai as aai
+from threading import Thread
 
 r = redis.Redis(host='localhost', port=6379, db=0)
 
-ngrok_tunnel = "https://2a15d1c33183.ngrok.app"  #note to update this every time you restart server
+ngrok_tunnel = "https://ae968869e4ad.ngrok.app"  #note to update this every time you restart server
 r.set('ngrok_url', ngrok_tunnel)
 
 assembly_key = "09578ab459aa4f998c90f1adb44ea9ea"
-
+aai.settings.api_key = assembly_key
 def get_transcript(id):
     headers = {'authorization': assembly_key}
     response = requests.get(
@@ -30,88 +32,122 @@ app = Flask(__name__)
 
 lemur_feedback_format = "<HEADLINE> \n\n <ul><NOTE><NOTE><NOTE></ul>"
 
-def lemur_call(previous_responses, transcript_ids):
-    formatted_previous_responses = "\n\n".join(previous_responses)
-    lemur_prompt = f"""
-    You are a helpful assistant that is aiding me in taking notes on this live stream. Imagine that I am a Youtuber hosting a brainstorming session about new video ideas.
 
-    Here is the is the feedback you have given me so far:
-
-    {formatted_previous_responses}
-
-    Imagine that you are an amazing, creative writer. You are an attendee in a writer's room and your job is to help us to expand on ideas as we discuss. 
-
-    Please provide me by expanding on ideas you've heard so far, or simply help us to condense the ideas you've heard into a more structured format. The writers room will be viewing these notes as the stream goes on which will help me during the session. I need quick, actionable notes that can fit in 2 sentences.
-    """
-    headers = {'authorization': assembly_key}
-    response = requests.post(
-        'https://api.assemblyai.com/lemur/v3/generate/task',
-        json={'prompt': lemur_prompt, 'context': lemur_feedback_format, 'transcript_ids': transcript_ids},
-        headers=headers
-    )
-    return response.json()
-
-ids = []
-@app.route('/', methods=['POST'])
-def webhook_handler():
-    try:
-        stream_id = request.args.get('streamid')
-        print('Stream ID: ' + stream_id)
-        job_id = request.json.get('transcript_id')
-        job_id_response = requests.get('https://api.assemblyai.com/v2/transcript/' + job_id, headers={'authorization': assembly_key})
-        if job_id_response.json()['status'] == 'error':
-            #note - need to return 200 here to prevent AssemblyAI from retrying
-            return {'message': 'Webhook received, but transcript had an error: perhaps it contained no audio or text'}, 200
-        print('job_id: ' + job_id)
-        r.rpush(stream_id, job_id) #store the transcript ids in a list named after the stream id
+def lemur_call(transcript, prev_responses):
+    lemur = aai.Lemur()
+    input_text = transcript
+    prompt = f"""
+    You are a helpful assistant who has a goal of taking diligent notes for sales representatives and contact center employees. You have a very specific form to fill out. 
     
-        #read the results from redis
-        assistant_completion_values = r.hvals('lemur_assistant_results')
-        assistant_completion_values = [value.decode('utf-8') for value in assistant_completion_values]
-        if len(assistant_completion_values) == 0:
-            assistant_completion_values.append("")
+    Here is what you have so far:
 
-        #read last 10 ids from redis and convert them into the format we need
-        ids = r.lrange(stream_id, -10, -1)
-        ids = [id.decode('utf-8') for id in ids]
-        ids = list(set(ids))
+    {prev_responses}
 
-        print("TRANSCRIPT IDS", ids)
+    Please continue to fill out this form, and make updates to previous responses where you see fit. For each heading (##), please provide a short, concise response, using the directions in the bullet points below each heading as your criteria.
 
-        #call lemur using the previous responses and the most recent 10 ids - note that this number of ids could be expanded dramatically to ~100
-        lemur_assistant_response = lemur_call(assistant_completion_values, ids)
-        print(lemur_assistant_response)
+    Remember to continue revising your previous nswer based on new information in the transcript
 
-        assistant_payload = lemur_assistant_response["response"]
-        if job_id and assistant_payload:
-            r.hset(f'{stream_id}_assistant_results', job_id, assistant_payload)  # store the payload in a hash specific to the stream id
+    ## Are they qualified?
+    -Is this person /company qualified to get value out of a new CRM product? 
 
-        return {'message': 'Webhook received'}, 200
+    ## What is their current CRM? 
+    -What CRM do they currently use? What will our solution replace?
+    -If it sounds like they're currently using a CRM, but they don't tell us who, you should put OTHER in this field
+
+    ## General Enthusiasm Level For Our Product/Company
+    -Please respond with a number between 1 and 5, where 1 is not positive at all, and 5 is extremely positive
+
+    ## How many users/employees do they have?
+    -Enter a number value. If they don't tell us, you can put UNKNOWN
+    -They are also likely to provide a general range. If they do this, please reflect a range like > 1000, 100-15, < 10, etc.
+
+    ## Sales Workflow Notes
+    -Please provide an overview of how this prospect's company handles their sales process. 
+    -What are the steps they take to close a deal? We seek to understand their entire workflow: from lead to close and post sale
+    -What is their sales model? (choose one: transactional, self service, enterprise, hybrid, or other)
+    -You won't be able to capture answers to this field all at once, so make sure you continue to update this based on the transcript and new information
+
+    ## Next Steps
+    -What are the next steps for this prospect?
+
+    ## Other Notes
+    -Please provide any other notes that you think would be helpful for the sales rep to know
+
+    You should NOT make up any information that is not contained within the transcript. If you are unsure of an answer, you can leave it blank.
+    Assume that you DO NOT know the answer until you get clear information from the transcript. You should leave spaces blank or put UNKNOWN until you get clear information from the transcript.
+    
+    YOU SHOULD NOT UNDER ANY CIRCUMSTANCES INCLUDE A PREAMBLE. Statements such as 'here are my notes' or 'here is what I have so far' should not be included in your response as they are strictly prohibited. 
+    """
+    try:
+        response = lemur.task(
+            prompt=prompt,
+            input_text=input_text,
+            final_model="basic"
+        )
+        print(response)
+        return response.response
     except Exception as e:
         print("Error: ", e)
-        # Even if there's an error, we send back a '200 OK' status to prevent retries from AssemblyAI.
-        return {'message': 'Webhook received, but an internal error occurred.'}, 200
+        return "Error"
+
+
+@app.route('/start', methods=['POST'])
+def start_process():
+    data = request.get_json()
+    session_id = str(data.get('session_id'))
+    if session_id:
+        print("Starting process for:", session_id)
+        stream_id = r.hget('sessions', session_id).decode('utf-8')
+        print("STREAM ID: ", stream_id)
+        Thread(target=check_for_updates_and_call_lemur, args=(stream_id,)).start()
+        return {"message": "Process started for session " + stream_id}, 200
+    else:
+        return {"error": "Session ID not provided"}, 400
+
+def check_for_updates_and_call_lemur(stream_id):
+    
+    r.hset(f"lemur_outputs:{stream_id}", "latest", " ")
+    print("Starting check for updates on session:", stream_id)
+    previous_transcript = ""
+    while True:
+        time.sleep(15)  # Check every 15 seconds
+        current_transcript = r.get(f"transcripts_{stream_id}")
+        previous_responses = r.hget(f"lemur_outputs:{stream_id}", "latest")
+        print(len(previous_responses))
+        if len(previous_responses) > 5:
+            previous_responses.decode('utf-8')
+        print(previous_responses)
+        print(current_transcript)
+        if current_transcript and current_transcript.decode() != previous_transcript:
+            print("CONDITION MET")
+            previous_transcript = current_transcript.decode()
+            # Call LeMUR API
+            lemur_response = lemur_call(previous_transcript, previous_responses)
+            print(lemur_response)
+            # Store in Redis
+            r.hset(f"lemur_outputs:{stream_id}", 'latest', json.dumps(lemur_response))
+
 
 @app.route('/stream')
 def stream():
     def event_stream():
         stream_id = request.args.get('streamid')
-        print('Stream ID: ' + stream_id)
+        previous_lemur_output = None
         while True:
-            # Get the last key in the list which represents the most recent results
-            last_key = r.lindex(stream_id, -1)
-            if last_key:
-                # Get the corresponding hash entry and send it as an update
-                assistant_update = r.hget(stream_id + '_assistant_results', last_key.decode())
+            # Get the latest LeMUR output from Redis
+            lemur_output = r.hget(f"lemur_outputs:{stream_id}", 'latest').decode('utf-8')
+            
+            if lemur_output != previous_lemur_output:
+                # Update the previous output and send the new data as an SSE
+                previous_lemur_output = lemur_output
+                yield f"data: {json.dumps({'lemur_response': previous_lemur_output})}\n\n"  # SSE data format
 
-                if assistant_update:
-                    yield f"data: {json.dumps({'assistant': {last_key.decode(): assistant_update.decode()}})}\n\n"  # SSE data format
-
-            # Sleep for a short period to prevent CPU overload
+            # Sleep to prevent CPU overload and allow for new updates to come in
             time.sleep(3)
+
     headers = {
         'Content-Type': 'text/event-stream',
-        'Access-Control-Allow-Origin': 'http://localhost:3001',
+        'Access-Control-Allow-Origin': 'http://localhost:3000',
         'Access-Control-Allow-Credentials': 'true'
     }
     
