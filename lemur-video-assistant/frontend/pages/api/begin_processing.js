@@ -6,7 +6,7 @@ export default async function handler(req, res) {
         // Make your request here
         // You can use fetch, axios, or any other request library you prefer
         try {
-            const response = await fetch('https://c68c3a29986e.ngrok.app', {
+            const response = await fetch('https://ce50e5a6e5d3.ngrok.app', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url, session_id }),

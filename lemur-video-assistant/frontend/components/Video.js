@@ -42,7 +42,7 @@ const Video = () => {
     const response = await fetch('/api/begin_processing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: 'rtmp://4.tcp.ngrok.io:15592/live/foo', session_id: session_id }), // /live/foo is the correct path - this is not placholder
+      body: JSON.stringify({ url: 'rtmp://2.tcp.ngrok.io:10026/live/foo', session_id: session_id }), // /live/foo is the correct path - this is not placholder
     });
 
     if (response.ok) {
@@ -78,7 +78,7 @@ const Video = () => {
   }
 
   function startLiveStream() {
-    callFrame.current.startLiveStreaming({ rtmpUrl: "rtmp://4.tcp.ngrok.io:15592/live/foo" }); //remember to change every time we updat this
+    callFrame.current.startLiveStreaming({ rtmpUrl: "rtmp://2.tcp.ngrok.io:10026/live/foo" }); //remember to change every time we updat this
     callFrame.current.on('live-streaming-started', showEvent)
 
     startProcessing()

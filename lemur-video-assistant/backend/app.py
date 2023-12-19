@@ -11,7 +11,7 @@ from threading import Thread
 
 r = redis.Redis(host='localhost', port=6379, db=0)
 
-ngrok_tunnel = "https://ae968869e4ad.ngrok.app"  #note to update this every time you restart server
+ngrok_tunnel = "https://5fa1b8a8c9f0.ngrok.app"  #note to update this every time you restart server
 r.set('ngrok_url', ngrok_tunnel)
 
 assembly_key = "09578ab459aa4f998c90f1adb44ea9ea"
@@ -43,16 +43,16 @@ def lemur_call(transcript, prev_responses):
     input_text = transcript
     prompt = f"""
     You are a helpful assistant who has a goal of taking diligent notes for sales representatives and contact center employees. You have a very specific form to fill out. 
-    
-    Here is what you have so far. Remember, you should ONLY BUILD UPON WHAT YOU HAVE SO FAR, WITHOUT MAKING UNEEDED CHANGES or DELETING FIELDS.
 
     However, you should make sure to update previous responses based on new information in the transcript if something seems to contradict what was found earlier on.
+
+    If is perfectly acceptable to just return the previous response so fa, provided that you format the response exactly as you see below. 
+    
+    Here are the notes you have so far:
 
     {prev_responses}
 
     Please continue to fill out this form, and make updates to previous responses where you see fit. For each heading (##), please provide a short, concise response, using the directions in the bullet points below each heading as your criteria.
-
-    Remember to continue revising your previous nswer based on new information in the transcript
 
     ## Are they qualified?
     -Is this person /company qualified to get value out of a new CRM product? 
@@ -106,17 +106,19 @@ def lemur_call(transcript, prev_responses):
     ## Other Notes
     -Please provide any other notes that you think would be helpful for the sales rep to know
     -If nothing else is directly relevant to a sales rep in this scenario or their team who will refer back to these notes later, please leave this field blank.
-
-    You SHOULD NOT make up any information that is not contained within the transcript. If you are unsure of an answer, you can leave it blank.
-    Assume that you DO NOT know the answer until you get clear information from the transcript. You should leave spaces blank or put UNKNOWN until you get clear information from the transcript.
     
+    You SHOULD NOT make up any information that is not contained within the transcript. If you are unsure of an answer, you can leave it blank.
+    Assume that you DO NOT know the answer until you get clear information from the transcript. You should leave spaces blank until you get clear information from the transcript.
+    
+    You should NOT delete any fields that you have already filled out. You should only update them if you get new information from the transcript.
+
     YOU SHOULD NOT UNDER ANY CIRCUMSTANCES INCLUDE A PREAMBLE. Statements such as 'here are my notes' or 'here is what I have so far' should not be included in your response as they are strictly prohibited. 
     """
     try:
         response = lemur.task(
             prompt=prompt,
             input_text=input_text,
-            final_model="basic",
+            final_model="default",
             max_output_size=3000
         )
         print(response)
@@ -147,32 +149,47 @@ def check_for_updates_and_call_lemur(stream_id):
     while True:
         time.sleep(30)  # Check every 15 seconds
         current_transcript = r.get(f"transcripts_{stream_id}")
-        print(current_transcript.decode())
+        # print(current_transcript.decode())
 
         previous_responses = r.hget(f"lemur_outputs:{stream_id}", "latest")
-        print(len(previous_responses))
+   
         if len(previous_responses) > 5:
             previous_responses.decode('utf-8')
-        print(previous_responses)
-        print(current_transcript)
+
+        #get the previous tthree responses
+        previous_response = previous_responses.decode('utf-8')[-1]
+        print("PREVIOUS RESPONSE")
+        print(previous_response)
         if current_transcript and current_transcript.decode() != previous_transcript:
             print("CONDITION MET")
             previous_transcript = current_transcript.decode()
             # Call LeMUR API
-            lemur_response = lemur_call(previous_transcript, previous_responses)
-            print(lemur_response)
-            # Store in Redis
-            r.hset(f"lemur_outputs:{stream_id}", 'latest', json.dumps(lemur_response))
+            print("PREVIOUS RESPONSES")
+            print(previous_responses)
+            print("*************************************")
+            try:
+                lemur_response = lemur_call(previous_transcript, previous_responses)
+                print(lemur_response)
+                # Store in Redis
+                r.hset(f"lemur_outputs:{stream_id}", 'latest', json.dumps(lemur_response))
+            except Exception as e:
+                print("Error calling LeMUR:", e)
+
+            
+            
 
 
 @app.route('/stream')
 def stream():
     def event_stream():
+        print("STREAMING")
         stream_id = request.args.get('streamid')
         previous_lemur_output = None
         while True:
             # Get the latest LeMUR output from Redis
-            lemur_output = r.hget(f"lemur_outputs:{stream_id}", 'latest').decode('utf-8')
+            lemur_output = r.hget(f"lemur_outputs:{stream_id}", 'latest')
+            if lemur_output:
+                lemur_output = lemur_output.decode('utf-8')
             
             if lemur_output != previous_lemur_output:
                 # Update the previous output and send the new data as an SSE

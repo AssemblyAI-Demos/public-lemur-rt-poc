@@ -124,7 +124,7 @@ def process_rtmp_stream(rtmp_url, session_id):
     threading.Thread(target=write_transcripts_to_redis, args=(stream_id,)).start()
 
     #CALL SERVER TO START LEMUR PROCESSING HERE...
-    response = requests.post('https://ae968869e4ad.ngrok.app/start', json={'session_id': session_id})
+    response = requests.post('https://5fa1b8a8c9f0.ngrok.app/start', json={'session_id': session_id})
     if response.status_code == 200:
         print("Process started successfully.")
     else:

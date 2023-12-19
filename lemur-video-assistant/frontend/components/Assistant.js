@@ -15,7 +15,7 @@ const Assistant = () => {
     const [editMode, setEditMode] = useState(false);
 
     useEffect(() => {
-        const eventSource = new EventSource(`https://ae968869e4ad.ngrok.app/stream?streamid=${streamId}`, {
+        const eventSource = new EventSource(`https://5fa1b8a8c9f0.ngrok.app/stream?streamid=${streamId}`, {
             withCredentials: true,
         });
 
