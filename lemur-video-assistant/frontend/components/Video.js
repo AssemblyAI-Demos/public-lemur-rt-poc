@@ -9,7 +9,7 @@ function showEvent(e) {
 //note - this daily.co token and joinCall() are probably best to be moved into server side. 
 //this app is for demo purposes only 
 //this key expires on Jan 6, 2024
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyIjoibGVtdXItYXNzaXN0YW50LXJvb20iLCJleHAiOjE3MDQ1MDk2MjEsIm8iOnRydWUsImQiOiI1NDI2NTliZS0xZGNlLTQzYjEtODMwZi1jZGVjMzRiYzFlODEiLCJpYXQiOjE3MDE5MTc2MjF9.Zd8pzlu_eNEPmXwdfelUM8e01UZRkf9UsC-6KueEzC8" //you can get one at: https://www.daily.co/
+const token = "YOUR DAILY TOKEN HERE" //you can get one at: https://www.daily.co/
 
 const Video = () => {
   const callFrame = useRef(null);

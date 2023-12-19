@@ -12,7 +12,7 @@ from flask import Flask, request
 from threading import Thread
 
 # AssemblyAI API token
-assembly_key = "2ba8fb6072af407f83d6f5bbec69863d"
+assembly_key = "KEY"
 
 # Redis setup
 r = redis.Redis(host='localhost', port=6379, db=0)

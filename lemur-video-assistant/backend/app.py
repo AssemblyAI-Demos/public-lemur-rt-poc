@@ -14,7 +14,7 @@ r = redis.Redis(host='localhost', port=6379, db=0)
 ngrok_tunnel = "https://5fa1b8a8c9f0.ngrok.app"  #note to update this every time you restart server
 r.set('ngrok_url', ngrok_tunnel)
 
-assembly_key = "09578ab459aa4f998c90f1adb44ea9ea"
+assembly_key = "KEY"
 aai.settings.api_key = assembly_key
 def get_transcript(id):
     headers = {'authorization': assembly_key}
@@ -46,7 +46,7 @@ def lemur_call(transcript, prev_responses):
 
     However, you should make sure to update previous responses based on new information in the transcript if something seems to contradict what was found earlier on.
 
-    If is perfectly acceptable to just return the previous response so fa, provided that you format the response exactly as you see below. 
+    It is perfectly acceptable to just return the previous response so far, provided that you format the response exactly as you see below. 
     
     Here are the notes you have so far:
 
@@ -61,7 +61,7 @@ def lemur_call(transcript, prev_responses):
 
     ## What is their current CRM? 
     -What CRM do they currently use? What will our solution replace?
-    -Please choose from the following options: {crm_options}. if none of the options apply, please put OTHER in this field and provide the name of the CRM if they tell us.
+    -Please choose from the following options: {crm_options}. If none of the options apply, please put OTHER in this field and provide the name of the CRM if they tell us.
     -If it sounds like they're currently using a CRM, but they don't tell us who, you should put OTHER in this field
     -If no CRM is mentioned, please leave this field blank
 
