@@ -91,11 +91,11 @@ const Assistant = () => {
     };
 
     return (
-        <div className="flex flex-col h-3/4 text-custom-white bg-custom-off-blue rounded-md">
+        <div className="flex flex-col h-7/8 text-custom-white bg-custom-off-blue rounded-md">
             <h2 className="text-xl p-2 font-bold mb-2">LeMUR Assistant</h2>
-            <button onClick={handleEditToggle}>
+            {/* <button onClick={handleEditToggle}>
                 {editMode ? 'Save' : 'Edit'}
-            </button>
+            </button> */}
             <div className="flex-grow overflow-auto bg-gray-200 p-2 rounded-sm shadow-inner text-black">
                 {editMode ? (
                     <>
@@ -105,11 +105,20 @@ const Assistant = () => {
                         <input type="text" name="currentCRM" value={data['what is their current crm']} onChange={handleChange} />
                         
                         <label>General Enthusiasm Level For Our Product/Company</label>
-                        <input type="text" name="enthusiasmLevel" value={data.enthusiasmLevel} onChange={handleChange} />
+                        <input type="dropdown" name="enthusiasmLevel" value={data.enthusiasmLevel} onChange={handleChange} />
+
+                        <label>How did they hear about us?</label>
+                        <input type="dropdown" name="leadSource" value={data['how did they hear about us?']} onChange={handleChange} />
+
+                        <label>Did they watch the demo video?</label>
+                        <input type="dropdown" name="watchedDemo" value={data['did they watch the demo video']} onChange={handleChange} />
                         
                         <label>How many users/employees do they have?</label>
                         <input type="number" name="numberOfUsers" value={data['how many users/employees do they have']} onChange={handleChange} />
                         
+                        <label>Top Sales Challenges</label>
+                        <textarea name="topSalesChallenges" value={data['top sales challenges']} onChange={handleChange} />
+
                         <label>Sales Workflow Notes</label>
                         <textarea name="salesWorkflowNotes" value={data.salesWorkflowNotes} onChange={handleChange} />
                         
@@ -124,7 +133,10 @@ const Assistant = () => {
                         <p className='p-2'><strong>Are they qualified?</strong> {data['are they qualified']}</p>
                         <p className='p-2'><strong>What is their current CRM?</strong> {data['what is their current crm']}</p>
                         <p className='p-2'><strong>General Enthusiasm Level For Our Product/Company:</strong> {data.enthusiasmLevel}</p>
+                        <p className='p-2'><strong>How did they hear about us?</strong> {data['how did they hear about us']}</p>
+                        <p className='p-2'><strong>Did they watch the demo video?</strong> {data['did they watch the demo video']}</p>
                         <p className='p-2'><strong>How many users/employees do they have?</strong> {data['how many users/employees do they have']}</p>
+                        <p className='p-2'><strong>Top Sales Challenges:</strong> {data['top sales challenges']}</p>
                         <p className='p-2'><strong>Sales Workflow Notes:</strong> {data.salesWorkflowNotes}</p>
                         <p className='p-2'><strong>Next Steps:</strong> {data['next steps']}</p>
                         <p className='p-2'><strong>Other Notes:</strong> {data['other notes']}</p>

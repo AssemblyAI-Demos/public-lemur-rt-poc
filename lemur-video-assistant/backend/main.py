@@ -25,24 +25,25 @@ final_transcripts = []
 
 # Function to handle WebSocket messages (transcription responses)
 def on_message(ws, message):
-    print("MESSAGE MF")
     transcript = json.loads(message)
     text = transcript.get('text', '')
     session_id = transcript.get('session_id', '')
 
     # Handling different types of messages
-    if transcript.get("message_type") == "PartialTranscript":
-        print(f"Partial transcript: {text}")
-    elif transcript.get("message_type") == 'FinalTranscript':
+    # if transcript.get("message_type") == "PartialTranscript":
+    #     print(f"Partial transcript: {text}")
+    if transcript.get("message_type") == 'FinalTranscript':
         print(f"Final transcript: {text}")
-        # if session_id:
-            # if session_id not in final_transcripts:
-            #     final_transcripts[session_id] = []
+        if session_id:
+            if session_id not in final_transcripts:
+                final_transcripts[session_id] = []
         final_transcript = {
                 'session_id': session_id,
-                'text': text
+                'text': text,
+                'timestamp': time.time()  # Add a timestamp
         }
         final_transcripts.append(final_transcript)
+        print(final_transcripts)
 
 def on_error(ws, error):
     print(f"WebSocket Error: {error}")
@@ -51,17 +52,34 @@ def on_close(ws, close_status_code, close_reason):
     print(f"WebSocket closed with code {close_status_code}: {close_reason}")
 
 # Function to periodically write final transcripts to Redis
+# def write_transcripts_to_redis(stream_id):
+#     print("WRITING TRANSCRIPTS TO REDIS FN")
+#     while True:
+#         print("WRITING TRANSCRIPTS TO REDIS LOOP")
+#         time.sleep(1)  # Wait for 30 seconds
+#         combined_transcript = ' '
+
+#         for final_transcript in final_transcripts:
+#             combined_transcript += final_transcript['text'] + ' '  
+#         print(combined_transcript)
+#         r.set(f"transcripts_{stream_id}", combined_transcript)
 def write_transcripts_to_redis(stream_id):
     print("WRITING TRANSCRIPTS TO REDIS FN")
     while True:
         print("WRITING TRANSCRIPTS TO REDIS LOOP")
-        print(final_transcripts)
-        time.sleep(1)  # Wait for 30 seconds
-        combined_transcript = ' '
-        for final_transcript in final_transcripts:
+        time.sleep(1)  # Sleep for 1 second before the next update
+        current_time = time.time()
+        combined_transcript = ''
+
+        # Filter to keep only transcripts from the last 30 seconds
+        recent_transcripts = [t for t in final_transcripts if current_time - t['timestamp'] <= 30]
+
+        for final_transcript in recent_transcripts:
             combined_transcript += final_transcript['text'] + ' '
+
         print(combined_transcript)
         r.set(f"transcripts_{stream_id}", combined_transcript)
+
 
 # RTMP to PCM conversion and WebSocket streaming
 def process_rtmp_stream(rtmp_url, session_id):

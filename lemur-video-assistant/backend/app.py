@@ -32,6 +32,11 @@ app = Flask(__name__)
 
 lemur_feedback_format = "<HEADLINE> \n\n <ul><NOTE><NOTE><NOTE></ul>"
 
+crm_options = ["Salesforce", "Hubspot", "Close", "Other"]
+
+sales_challanges_options = ["Top of funnel", "Close rates", "Sales cycle too long", "Poor record keeping", "Other"]
+
+lead_source_options = ["Referral", "Google", "Social Media", "Conference", "Other"]
 
 def lemur_call(transcript, prev_responses):
     lemur = aai.Lemur()
@@ -39,7 +44,9 @@ def lemur_call(transcript, prev_responses):
     prompt = f"""
     You are a helpful assistant who has a goal of taking diligent notes for sales representatives and contact center employees. You have a very specific form to fill out. 
     
-    Here is what you have so far:
+    Here is what you have so far. Remember, you should ONLY BUILD UPON WHAT YOU HAVE SO FAR, WITHOUT MAKING UNEEDED CHANGES or DELETING FIELDS.
+
+    However, you should make sure to update previous responses based on new information in the transcript if something seems to contradict what was found earlier on.
 
     {prev_responses}
 
@@ -49,31 +56,58 @@ def lemur_call(transcript, prev_responses):
 
     ## Are they qualified?
     -Is this person /company qualified to get value out of a new CRM product? 
+    -You should only output a 'yes' or 'no' answer to this question
+    -If we don't have a CLEAR answer to whether or not they are qualified, you should leave this field blank
 
     ## What is their current CRM? 
     -What CRM do they currently use? What will our solution replace?
+    -Please choose from the following options: {crm_options}. if none of the options apply, please put OTHER in this field and provide the name of the CRM if they tell us.
     -If it sounds like they're currently using a CRM, but they don't tell us who, you should put OTHER in this field
+    -If no CRM is mentioned, please leave this field blank
 
     ## General Enthusiasm Level For Our Product/Company
     -Please respond with a number between 1 and 5, where 1 is not positive at all, and 5 is extremely positive
+    -If we don't yet have enough information to answer this question, please leave this field blank. You should have at least a few paragraphs worth of transcription to answer this
 
     ## How many users/employees do they have?
-    -Enter a number value. If they don't tell us, you can put UNKNOWN
-    -They are also likely to provide a general range. If they do this, please reflect a range like > 1000, 100-15, < 10, etc.
+    -Enter a NUMERICAL value. If they don't tell us, you can put leave this field blank
+    -They are also likely to provide a general range. If they do this, please reflect a range like > 1000 (if the amount is greater than 1k), 100-150 (if between 100 and 150), < 10 (if less than 10), etc.
+    -If they don't mention this, please leave this field blank
+    -You should make sure to enter an overall number. if the prospect provides a list of employees from several departments, please add them together for a single overall user count.
+        -i.e. if they say they have 10 AEs and 2 SDRs, you should enter 12 as the total number of users
+
+    ## Did they watch the demo video?
+    -Please only return a 'yes' or 'no' answer to this question
+    -If the topic of the demo video is not discussed, please leave this field blank
+
+    ## How did they hear about us?
+    -Please return one of the following options: {lead_source_options}
+    -If they don't mention any of these, please leave this field blank
+    -If 'other' is selected, please cite the source they mention
 
     ## Sales Workflow Notes
     -Please provide an overview of how this prospect's company handles their sales process. 
     -What are the steps they take to close a deal? We seek to understand their entire workflow: from lead to close and post sale
     -What is their sales model? (choose one: transactional, self service, enterprise, hybrid, or other)
     -You won't be able to capture answers to this field all at once, so make sure you continue to update this based on the transcript and new information
+    -If they don't mention any of these, please leave this field blank
+
+    ## Top Sales Challenges
+    -Please return a sublist from this overall list of potential challenges: {sales_challanges_options}
+    -If they don't mention anything about a sales challenge, please leave this field blank 
+    -If 'other' is selected, please cite the challenge they mention
 
     ## Next Steps
     -What are the next steps for this prospect?
+    -A next step is a tangible action that the sales rep should take after the call. 
+    -Examples of next steps include: sending a follow up email, scheduling a demo, sending a contract, etc.
+    -If no next step is clear please leave this field blank. We NEED to identify situations where next steps are not clear
 
     ## Other Notes
     -Please provide any other notes that you think would be helpful for the sales rep to know
+    -If nothing else is directly relevant to a sales rep in this scenario or their team who will refer back to these notes later, please leave this field blank.
 
-    You should NOT make up any information that is not contained within the transcript. If you are unsure of an answer, you can leave it blank.
+    You SHOULD NOT make up any information that is not contained within the transcript. If you are unsure of an answer, you can leave it blank.
     Assume that you DO NOT know the answer until you get clear information from the transcript. You should leave spaces blank or put UNKNOWN until you get clear information from the transcript.
     
     YOU SHOULD NOT UNDER ANY CIRCUMSTANCES INCLUDE A PREAMBLE. Statements such as 'here are my notes' or 'here is what I have so far' should not be included in your response as they are strictly prohibited. 
@@ -82,7 +116,8 @@ def lemur_call(transcript, prev_responses):
         response = lemur.task(
             prompt=prompt,
             input_text=input_text,
-            final_model="basic"
+            final_model="basic",
+            max_output_size=3000
         )
         print(response)
         return response.response
@@ -110,8 +145,10 @@ def check_for_updates_and_call_lemur(stream_id):
     print("Starting check for updates on session:", stream_id)
     previous_transcript = ""
     while True:
-        time.sleep(15)  # Check every 15 seconds
+        time.sleep(30)  # Check every 15 seconds
         current_transcript = r.get(f"transcripts_{stream_id}")
+        print(current_transcript.decode())
+
         previous_responses = r.hget(f"lemur_outputs:{stream_id}", "latest")
         print(len(previous_responses))
         if len(previous_responses) > 5:
