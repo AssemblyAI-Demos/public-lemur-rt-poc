@@ -51,18 +51,6 @@ def on_error(ws, error):
 def on_close(ws, close_status_code, close_reason):
     print(f"WebSocket closed with code {close_status_code}: {close_reason}")
 
-# Function to periodically write final transcripts to Redis
-# def write_transcripts_to_redis(stream_id):
-#     print("WRITING TRANSCRIPTS TO REDIS FN")
-#     while True:
-#         print("WRITING TRANSCRIPTS TO REDIS LOOP")
-#         time.sleep(1)  # Wait for 30 seconds
-#         combined_transcript = ' '
-
-#         for final_transcript in final_transcripts:
-#             combined_transcript += final_transcript['text'] + ' '  
-#         print(combined_transcript)
-#         r.set(f"transcripts_{stream_id}", combined_transcript)
 def write_transcripts_to_redis(stream_id):
     print("WRITING TRANSCRIPTS TO REDIS FN")
     while True:

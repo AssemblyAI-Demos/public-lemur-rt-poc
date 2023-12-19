@@ -149,7 +149,6 @@ def check_for_updates_and_call_lemur(stream_id):
     while True:
         time.sleep(30)  # Check every 15 seconds
         current_transcript = r.get(f"transcripts_{stream_id}")
-        # print(current_transcript.decode())
 
         previous_responses = r.hget(f"lemur_outputs:{stream_id}", "latest")
    
